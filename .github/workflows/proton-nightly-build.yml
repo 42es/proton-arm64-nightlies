@@ -232,11 +232,43 @@ jobs:
 
       # --------------------------------------------------------
       # 13. Install Wine ARM64
+      # GameNative's --install does `make install` without DESTDIR, which tries
+      # to write to the literal Android path /data/data/com.termux/... on the
+      # runner — that doesn't exist. We do the install ourselves with DESTDIR
+      # then copy the same files GameNative's script would have copied.
       # --------------------------------------------------------
       - name: Install Wine ARM64
         run: |
-          cd wine-source
-          bash build-scripts/build-step-arm64ec.sh --install
+          STAGING="$HOME/wine-staging"
+          OUTPUT_DIR="$HOME/compiled-files-aarch64"
+          # install_dir matches what build-step-arm64ec.sh sets:
+          # $deps/../opt/wine = termuxfs/.../files/opt/wine
+          DEPS="$HOME/termuxfs/aarch64/data/data/com.termux/files/usr"
+          INSTALL_DIR="$DEPS/../opt/wine"
+
+          mkdir -p "$STAGING" "$OUTPUT_DIR/bin" "$OUTPUT_DIR/lib" "$OUTPUT_DIR/share"
+
+          # Install into staging area so the absolute prefix path is reachable
+          make -C wine-source install DESTDIR="$STAGING" -j$(nproc)
+
+          # The installed tree is at $STAGING/$INSTALL_DIR — flatten it
+          STAGED_PREFIX="$STAGING$INSTALL_DIR"
+          if [ ! -d "$STAGED_PREFIX" ]; then
+            echo "ERROR: expected install tree at $STAGED_PREFIX"
+            find "$STAGING" -maxdepth 6 -type d | head -30
+            exit 1
+          fi
+
+          # Copy output matching what GameNative's --install would produce
+          cp -r "$STAGED_PREFIX"/bin/wine*    "$OUTPUT_DIR/bin/" 2>/dev/null || true
+          cp -r "$STAGED_PREFIX"/bin/reg*     "$OUTPUT_DIR/bin/" 2>/dev/null || true
+          cp -r "$STAGED_PREFIX"/bin/msi*     "$OUTPUT_DIR/bin/" 2>/dev/null || true
+          cp -r "$STAGED_PREFIX"/bin/notepad  "$OUTPUT_DIR/bin/" 2>/dev/null || true
+          cp -r "$STAGED_PREFIX/lib/wine"     "$OUTPUT_DIR/lib/"
+          cp -r "$STAGED_PREFIX/share/wine"   "$OUTPUT_DIR/share/"
+
+          echo "Install complete. Output:"
+          ls -lh "$OUTPUT_DIR/bin" "$OUTPUT_DIR/lib" "$OUTPUT_DIR/share"
 
       # --------------------------------------------------------
       # 14. Download prefixPack.txz
