@@ -181,35 +181,24 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/output"
 
           # Proton profile — for standard Winlator / GameNative
-          python3 -c "
-import json
-profile = {
-  'type': 'Proton',
-  'versionName': '${VERSION}',
-  'versionCode': 1,
-  'description': 'Proton 10 ARM64 nightly ${GIT_DATE} (${GIT_HASH})',
-  'files': [],
-  'wine': {'binPath': 'bin', 'libPath': 'lib', 'prefixPack': 'prefixPack.txz'}
-}
-open('${OUTPUT_DIR}/profile.json', 'w').write(json.dumps(profile, indent=2))
-"
+          python3 scripts/generate_profile.py \
+            "${OUTPUT_DIR}/profile.json" \
+            "${VERSION}" \
+            "${GIT_DATE}" \
+            "Proton 10 ARM64 nightly ${GIT_DATE} (${GIT_HASH})"
+
           cd "$OUTPUT_DIR"
           tar -cf - bin lib share prefixPack.txz profile.json \
             | zstd -T0 -19 -o "$GITHUB_WORKSPACE/output/proton-${VERSION}.wcp"
 
           # Wine profile — for Winlator CMOD / Ludashi
-          python3 -c "
-import json
-profile = {
-  'type': 'Wine',
-  'versionName': '${VERSION}',
-  'versionCode': 0,
-  'description': 'Proton 10 ARM64 nightly ${GIT_DATE} (${GIT_HASH})',
-  'files': [],
-  'wine': {'binPath': 'bin', 'libPath': 'lib', 'prefixPack': 'prefixPack.txz'}
-}
-open('${OUTPUT_DIR}/profile.json', 'w').write(json.dumps(profile, indent=2))
-"
+          python3 "$GITHUB_WORKSPACE/scripts/generate_profile.py" \
+            "${OUTPUT_DIR}/profile.json" \
+            "${VERSION}" \
+            "${GIT_DATE}" \
+            "Proton 10 ARM64 nightly ${GIT_DATE} (${GIT_HASH})" \
+            wine
+
           tar -cJf "$GITHUB_WORKSPACE/output/proton-wine-${VERSION}.wcp.xz" \
             bin lib share prefixPack.txz profile.json
 
