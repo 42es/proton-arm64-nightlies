@@ -187,19 +187,19 @@ jobs:
         run: |
           mkdir -p wine-build/target
           cd wine-build/target
+          PREFIX=/data/data/com.winlator.cmod/files/imagefs/usr/opt/wine
           ../../wine-source/configure \
             --host=aarch64-linux-android \
             --with-wine-tools="$(pwd)/../tools" \
-            --prefix=/data/data/com.winlator.cmod/files/imagefs/usr/opt/wine \
-            --bindir=bin \
-            --libdir=lib \
+            --prefix="${PREFIX}" \
+            --bindir="${PREFIX}/bin" \
+            --libdir="${PREFIX}/lib" \
             --enable-archs=aarch64,i386 \
             --without-x \
             --without-freetype \
             --without-gnutls \
             --without-unwind \
             --without-dbus \
-            --without-openldap \
             --without-sane \
             --without-netapi \
             --without-pulse \
