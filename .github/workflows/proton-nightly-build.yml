@@ -204,6 +204,18 @@ jobs:
           cp -r "$STAGED/lib/wine"    "$OUTPUT_DIR/lib/"
           cp -r "$STAGED/share/wine"  "$OUTPUT_DIR/share/"
 
+          # GameNative/Box64 looks for 'wine' (not 'wine64') in bin/
+          # Create a 'wine' symlink pointing to wine64 if it doesn't exist
+          if [ -f "$OUTPUT_DIR/bin/wine64" ] && [ ! -e "$OUTPUT_DIR/bin/wine" ]; then
+            ln -s wine64 "$OUTPUT_DIR/bin/wine"
+            echo "Created wine -> wine64 symlink"
+          elif [ -e "$OUTPUT_DIR/bin/wine" ]; then
+            echo "wine binary already exists"
+          else
+            echo "WARNING: wine64 not found in $OUTPUT_DIR/bin/"
+            ls "$OUTPUT_DIR/bin/"
+          fi
+
       - name: Download prefixPack.txz
         run: |
           wget https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-arm64ec.txz \
