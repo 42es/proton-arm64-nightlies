@@ -21,6 +21,29 @@ on:
         options:
           - app.gamenative
           - com.winlator.cmod
+      wine_ref:
+        description: 'Valve wine ref (branch/tag/commit)'
+        required: false
+        default: 'bleeding-edge'
+        type: string
+      gamenative_ref:
+        description: 'GameNative proton-wine ref (branch/tag/commit)'
+        required: false
+        default: 'proton_10.0'
+        type: string
+      kernel_compat_wcp_url:
+        description: 'Optional URL to known-good donor .wcp for kernel32/ntdll overlay'
+        required: false
+        default: ''
+        type: string
+      kernel_compat_required:
+        description: 'Fail build if kernel_compat_wcp_url is empty'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   build:
@@ -69,7 +92,8 @@ jobs:
             zlib1g-dev:i386 \
             zstd \
             xz-utils \
-            python3-zstandard
+            python3-zstandard \
+            patch
 
       - name: Clone Wine source (ValveSoftware bleeding-edge)
         run: |
@@ -123,6 +147,9 @@ jobs:
           # Exclude FEX stats shm block on Android - shm_open is in libc but
           # the ntdll.so link step doesn't pull it in, causing undefined symbol.
           python3 scripts/fix_virtual_c.py wine-source
+
+          # Apply suspend-bypass chain directly when test-bylaws patches drift.
+          python3 scripts/fix_suspend_chain.py wine-source
 
           # Rewrite the baked-in install prefix from the Termux CI path to the
           # Winlator Cmod path that GameNative rewrites at runtime via libredirect.
@@ -283,6 +310,55 @@ jobs:
           wget https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-arm64ec.txz \
             -O $HOME/compiled-files-aarch64/prefixPack.txz
 
+      - name: Apply kernel32 compatibility overlay (optional)
+        run: |
+          COMPAT_URL="${{ github.event.inputs.kernel_compat_wcp_url || '' }}"
+          REQUIRED="${{ github.event.inputs.kernel_compat_required || 'false' }}"
+
+          WORK_DIR="$HOME/kernel-compat-donor"
+          rm -rf "$WORK_DIR"
+          mkdir -p "$WORK_DIR/extracted"
+
+          if [ -z "$COMPAT_URL" ]; then
+            echo "No donor URL provided, resolving latest GameNative Proton arm64ec WCP..."
+            python3 - <<'PY' > "$WORK_DIR/resolved_url.txt"
+import json
+import re
+import urllib.request
+
+api = "https://api.github.com/repos/GameNative/proton-wine/releases/latest"
+with urllib.request.urlopen(api) as r:
+    data = json.load(r)
+
+assets = data.get("assets", [])
+# Prefer standard Proton donor, avoid proton-wine-* variants.
+cands = [
+    a.get("browser_download_url", "")
+    for a in assets
+    if re.match(r"^proton-[0-9].*arm64ec\.wcp$", a.get("name", ""))
+]
+
+print(cands[0] if cands else "")
+PY
+            COMPAT_URL="$(cat "$WORK_DIR/resolved_url.txt")"
+          fi
+
+          if [ -z "$COMPAT_URL" ]; then
+            if [ "$REQUIRED" = "true" ]; then
+              echo "ERROR: unable to resolve kernel compatibility donor WCP URL"
+              exit 1
+            fi
+            echo "No donor found, skipping overlay"
+            exit 0
+          fi
+
+          echo "Using donor WCP: $COMPAT_URL"
+          wget -q "$COMPAT_URL" -O "$WORK_DIR/donor.wcp"
+          tar -xf "$WORK_DIR/donor.wcp" -C "$WORK_DIR/extracted"
+
+          python3 scripts/apply_kernel_compat_overlay.py \
+            "$HOME/compiled-files-aarch64" \
+            "$WORK_DIR/extracted"
       - name: Generate profile.json files and package
         run: |
           OUTPUT_DIR="$HOME/compiled-files-aarch64"
@@ -382,6 +458,9 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: update latest.json for nightly ${GIT_DATE}"
           git pull --rebase origin HEAD
           git push
+
+
+
 
 
 

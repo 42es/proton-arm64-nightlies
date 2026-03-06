@@ -1,17 +1,38 @@
 #!/usr/bin/env python3
 """
 Fail fast when critical patch markers are missing from the source tree.
-This prevents producing a build that compiles but fails at runtime.
+This prevents producing a build that compiles but hangs at runtime.
 """
 import os
 import sys
 
 
+# (relative source file, markers where any match is acceptable, human label)
 REQUIRED_ANY = [
     (
         "dlls/wow64/process.c",
         ["Wow64SuspendLocalThread", "wow64_NtSuspendThread"],
-        "critical wow64 suspend marker"
+        "wow64 suspend entrypoint"
+    ),
+    (
+        "server/thread.h",
+        ["bypass_proc_suspend"],
+        "server thread suspend bypass flag"
+    ),
+    (
+        "server/thread.c",
+        ["bypass_proc_suspend"],
+        "server thread suspend bypass logic"
+    ),
+    (
+        "server/process.c",
+        ["bypass_proc_suspend"],
+        "server process suspend bypass logic"
+    ),
+    (
+        "dlls/ntdll/unix/thread.c",
+        ["BYPASS_PROCESS_FREEZE"],
+        "ntdll unix thread bypass bridge"
     ),
 ]
 
@@ -39,12 +60,12 @@ def main() -> int:
             )
 
     if errors:
-        print("ERROR: required patch markers missing; refusing to continue")
+        print("ERROR: required suspend-bypass patch markers missing; refusing to continue")
         for e in errors:
             print(f"  - {e}")
         return 2
 
-    print("verify_required_markers: all required markers present")
+    print("verify_required_markers: all required suspend-bypass markers present")
     return 0
 
 

@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
-Patches build-step-arm64ec.sh to use forgiving git apply options for most
-patches, but fail hard for known-critical patches required for runtime.
+Patches build-step-arm64ec.sh to use forgiving patch application for most
+patches, but fail hard for critical test-bylaws patches required for runtime.
+
+For test-bylaws patches we try, in order:
+1) git apply with loose whitespace/context
+2) git apply 3-way
+3) GNU patch (fuzzy line-offset application)
+4) reverse-check for already-applied
+Then fail if none work.
 """
 import sys
 
@@ -12,11 +19,10 @@ with open(path) as f:
 
 txt = txt.replace(
     'git apply ./android/patches/$patch',
-    # For the critical wow64/process patch: try normal apply, then 3-way apply,
-    # then reverse-check for already-applied. Only fail if all of those fail.
-    'if [ "$patch" = "test-bylaws/dlls_wow64_process_c.patch" ]; then '
+    'if [[ "$patch" == test-bylaws/* ]]; then '
     'git apply --ignore-whitespace -C1 ./android/patches/$patch'
     ' || git apply --3way --ignore-space-change ./android/patches/$patch'
+    ' || patch -p1 --forward --batch --ignore-whitespace -i ./android/patches/$patch'
     ' || git apply --ignore-whitespace -C1 -R --check ./android/patches/$patch 2>/dev/null'
     ' && echo "ALREADY APPLIED (skipped): $patch"'
     ' || { echo "ERROR: critical patch failed: $patch"; exit 1; }; '
