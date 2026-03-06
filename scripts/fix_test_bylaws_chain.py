@@ -74,14 +74,14 @@ def try_apply_patch(wine_src, patch_path):
     ]
 
     for cmd in attempts:
-        rc, out = run(cmd, cwd=wine_src)
+        rc, out = run(cmd, cwd=None)
         if rc == 0:
             return True, out
 
     # already-applied check
     rc, out = run(
         ["git", "-C", wine_src, "apply", "--ignore-whitespace", "-C1", "-R", "--check", patch_path],
-        cwd=wine_src,
+        cwd=None,
     )
     if rc == 0:
         return True, "already applied"
@@ -114,7 +114,7 @@ def main():
         print("Usage: fix_test_bylaws_chain.py <wine-source-dir>")
         return 1
 
-    wine_src = sys.argv[1]
+    wine_src = os.path.abspath(sys.argv[1])
     patch_dir = os.path.join(wine_src, "android", "patches", "test-bylaws")
 
     if not os.path.isdir(patch_dir):
