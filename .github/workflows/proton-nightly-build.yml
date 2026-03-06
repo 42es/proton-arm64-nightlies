@@ -214,22 +214,26 @@ jobs:
 
           mkdir -p "$GITHUB_WORKSPACE/output"
 
+          # versionCode: use date as YYYYMMDD integer (matches GameNative convention)
+          VERSION_CODE=$(echo "${GIT_DATE}" | tr -d '-')
+
           # Proton profile — for standard Winlator / GameNative
           python3 scripts/generate_profile.py \
             "${OUTPUT_DIR}/profile.json" \
             "${VERSION}" \
-            "${GIT_DATE}" \
+            "${VERSION_CODE}" \
             "Proton 10 ARM64 nightly ${GIT_DATE} (${GIT_HASH})"
 
           cd "$OUTPUT_DIR"
-          tar -cf - bin lib share prefixPack.txz profile.json \
-            | zstd -T0 -19 -o "$GITHUB_WORKSPACE/output/proton-${VERSION}.wcp"
+          # GameNative expects XZ-compressed .wcp (not zstd)
+          tar -cJf "$GITHUB_WORKSPACE/output/proton-${VERSION}.wcp" \
+            bin lib share prefixPack.txz profile.json
 
           # Wine profile — for Winlator CMOD / Ludashi
           python3 "$GITHUB_WORKSPACE/scripts/generate_profile.py" \
             "${OUTPUT_DIR}/profile.json" \
             "${VERSION}" \
-            "${GIT_DATE}" \
+            "${VERSION_CODE}" \
             "Proton 10 ARM64 nightly ${GIT_DATE} (${GIT_HASH})" \
             wine
 
