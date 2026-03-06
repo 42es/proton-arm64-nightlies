@@ -18,13 +18,14 @@ def main():
     description = sys.argv[4]
     profile_type = "Wine" if len(sys.argv) > 5 and sys.argv[5] == "wine" else "Proton"
 
+    paths_key = "proton" if profile_type == "Proton" else "wine"
     profile = {
         "type": profile_type,
         "versionName": version_name,
         "versionCode": version_code,
         "description": description,
         "files": [],
-        "wine": {
+        paths_key: {
             "binPath": "bin",
             "libPath": "lib",
             "prefixPack": "prefixPack.txz"
