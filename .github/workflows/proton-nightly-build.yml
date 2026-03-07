@@ -31,27 +31,6 @@ on:
         required: false
         default: 'proton_10.0'
         type: string
-      kernel_compat_enabled:
-        description: 'Apply kernel32/ntdll compatibility overlay'
-        required: false
-        default: 'true'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-      kernel_compat_wcp_url:
-        description: 'Optional URL to known-good donor .wcp for kernel32/ntdll overlay'
-        required: false
-        default: ''
-        type: string
-      kernel_compat_required:
-        description: 'Fail build if kernel_compat_wcp_url is empty'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
 
 jobs:
   build:
@@ -177,12 +156,14 @@ jobs:
 
           # Rewrite the baked-in install prefix from the Termux CI path to the
           # actual custom Proton install directory used by GameNative imports.
-          # This workflow packages type=Proton with versionName=bleeding-edge-arm64ec,
-          # which GameNative normalizes to /opt/proton-bleeding-edge-arm64ec on-device.
+          # This workflow packages type=Proton with a parser-compatible numeric
+          # versionName so stock GameNative recognizes it as ARM64EC without any
+          # app-side parser changes. GameNative normalizes that to
+          # /opt/proton-10.0.99-arm64ec on-device.
           # If Wine is built against /opt/wine instead, builtin DLL resolution points at
           # the wrong tree after import and startup dies during kernel32 initialization.
           # libredirect still rewrites com.winlator.cmod -> app.gamenative at runtime.
-          INSTALL_DIR="/data/data/com.winlator.cmod/files/imagefs/opt/proton-bleeding-edge-arm64ec"
+          INSTALL_DIR="/data/data/com.winlator.cmod/files/imagefs/opt/proton-10.0.99-arm64ec"
           # RUNTIME_PATH is baked into wine's ELF RUNPATH via -Wl,-rpath=.
           # It must point somewhere libredirect can rewrite, not com.termux.
           # Use com.winlator.cmod path so libredirect's rewrite rule applies.
@@ -284,7 +265,7 @@ jobs:
           # $install_dir = /data/data/com.winlator.cmod/files/imagefs/opt/wine
           # which doesn't exist on a hosted runner. Pre-create it with sudo so
           # make install can write there, then let the script copy to OUTPUT_DIR.
-          sudo mkdir -p /data/data/com.winlator.cmod/files/imagefs/opt/proton-bleeding-edge-arm64ec
+          sudo mkdir -p /data/data/com.winlator.cmod/files/imagefs/opt/proton-10.0.99-arm64ec
           sudo chmod -R 777 /data/data
 
           cd wine-source
@@ -302,42 +283,6 @@ jobs:
           wget https://github.com/GameNative/bionic-prefix-files/raw/main/prefixPack-arm64ec.txz \
             -O $HOME/compiled-files-aarch64/prefixPack.txz
 
-      - name: Apply kernel32 compatibility overlay (optional)
-        run: |
-          ENABLED="${{ github.event.inputs.kernel_compat_enabled || 'true' }}"
-          COMPAT_URL="${{ github.event.inputs.kernel_compat_wcp_url || '' }}"
-          REQUIRED="${{ github.event.inputs.kernel_compat_required || 'false' }}"
-
-          if [ "$ENABLED" != "true" ]; then
-            echo "kernel compatibility overlay disabled"
-            exit 0
-          fi
-
-          WORK_DIR="$HOME/kernel-compat-donor"
-          rm -rf "$WORK_DIR"
-          mkdir -p "$WORK_DIR/extracted"
-
-          if [ -z "$COMPAT_URL" ]; then
-            echo "No donor URL provided, resolving latest GameNative Proton arm64ec WCP..."
-            COMPAT_URL="$(python3 -c 'import json,re,urllib.request; data=json.load(urllib.request.urlopen("https://api.github.com/repos/GameNative/proton-wine/releases/latest")); assets=data.get("assets",[]); c=[a.get("browser_download_url","") for a in assets if re.match(r"^proton-[0-9].*arm64ec\.wcp$", a.get("name",""))]; print(c[0] if c else "")')"
-          fi
-
-          if [ -z "$COMPAT_URL" ]; then
-            if [ "$REQUIRED" = "true" ]; then
-              echo "ERROR: unable to resolve kernel compatibility donor WCP URL"
-              exit 1
-            fi
-            echo "No donor found, skipping overlay"
-            exit 0
-          fi
-
-          echo "Using donor WCP: $COMPAT_URL"
-          wget -q "$COMPAT_URL" -O "$WORK_DIR/donor.wcp"
-          tar -xf "$WORK_DIR/donor.wcp" -C "$WORK_DIR/extracted"
-
-          python3 scripts/apply_kernel_compat_overlay.py \
-            "$HOME/compiled-files-aarch64" \
-            "$WORK_DIR/extracted"
       - name: Generate profile.json files and package
         run: |
           OUTPUT_DIR="$HOME/compiled-files-aarch64"
@@ -348,10 +293,11 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/output"
 
           # versionName: GameNative installs to /opt/proton-{versionName}/
-          # Use a nightly-specific name so it doesn't collide with stable "10.0-4-arm64ec".
+          # Keep it numeric so the stock WineInfo parser accepts it, but use a
+          # non-stable value so it doesn't collide with shipped builds.
           # Both Proton and Wine profiles use "wine" as the paths key (confirmed from
           # GameNative/proton-wine build-proton.yml). Proton versionCode=1, Wine versionCode=0.
-          PROFILE_VERSION="bleeding-edge-arm64ec"
+          PROFILE_VERSION="10.0.99-arm64ec"
           PROTON_VERSION_CODE=1
           WINE_VERSION_CODE=0
 
@@ -458,9 +404,11 @@ jobs:
           echo "=== Disk usage before cleanup ==="
           df -h
           rm -rf "$GITHUB_WORKSPACE/wine-source" "$GITHUB_WORKSPACE/gamenative-src" "$GITHUB_WORKSPACE/output" || true
-          rm -rf "$HOME/compiled-files-aarch64" "$HOME/wine-staging" "$HOME/kernel-compat-donor" || true
+          rm -rf "$HOME/compiled-files-aarch64" "$HOME/wine-staging" || true
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
+
+
 
 
