@@ -166,8 +166,14 @@ jobs:
           else
             INSTALL_DIR="/data/data/${APP_ID}/files/imagefs/opt/wine"
           fi
+          # RUNTIME_PATH is baked into wine's ELF RUNPATH via -Wl,-rpath=
+          # It must point somewhere libredirect can rewrite, not com.termux.
+          # Use com.winlator.cmod path so libredirect's rewrite rule applies.
+          RUNTIME_PATH="/data/data/com.winlator.cmod/files/imagefs/usr"
           echo "Using install_dir=$INSTALL_DIR"
+          echo "Using RUNTIME_PATH=$RUNTIME_PATH"
           sed -i "s|export install_dir=.*|export install_dir=${INSTALL_DIR}|" wine-source/build-scripts/build-step-arm64ec.sh
+          sed -i "s|export RUNTIME_PATH=.*|export RUNTIME_PATH=\"${RUNTIME_PATH}\"|" wine-source/build-scripts/build-step-arm64ec.sh
 
       - name: Download and extract termuxfs for aarch64
         run: |
@@ -351,31 +357,19 @@ jobs:
           OUTPUT_DIR="$HOME/compiled-files-aarch64"
           GIT_HASH=$(git -C wine-source rev-parse --short HEAD)
           GIT_DATE=$(git -C wine-source log -1 --format='%cd' --date=format:'%Y%m%d')
-          # versionName must end in -arm64ec so GameNative recognises it as arm64ec
-          # and extracts the .wcp. Use date+hash as build identifier before the suffix.
           VERSION="proton-10.0-nightly-${GIT_DATE}-${GIT_HASH}-arm64ec"
 
           mkdir -p "$GITHUB_WORKSPACE/output"
 
-          # versionCode: always 0 ? avoids ambiguity when GameNative reconstructs
-          # the entry name as verName+"-"+versionCode (date already in verName)
+          # GameNative hardcodes winePath=/opt/wine regardless of profile lookup result.
+          # Profile lookup also has a bug where it strips the Type prefix before comparing,
+          # causing every custom Proton to fail lookup and fall back to /opt/wine anyway.
+          # By setting versionName="wine", GameNative installs the WCP directly to
+          # /opt/wine/ so the hardcoded fallback path works correctly.
+          PROFILE_VERSION="wine"
           VERSION_CODE=1
 
-          # GameNative prepends "proton-" to versionName to build the install dir path,
-          # so versionName in profile.json must NOT include the "proton-" prefix.
-          # e.g. VERSION=proton-10.0-nightly-...-arm64ec
-          #   -> PROFILE_VERSION=10.0-nightly-...-arm64ec
-          #   -> installs to imagefs/opt/proton-10.0-nightly-...-arm64ec/
-          PROFILE_VERSION="${VERSION#proton-}"
-          CANONICAL_PROTON_WINE_VERSION="Proton-${PROFILE_VERSION}-${VERSION_CODE}"
-          LEGACY_PROTON_WINE_VERSION="proton-${PROFILE_VERSION}-${VERSION_CODE}"
-
-          cat > "$GITHUB_WORKSPACE/output/gamenative-wineversion.txt" <<EOF
-          canonical=${CANONICAL_PROTON_WINE_VERSION}
-          legacy=${LEGACY_PROTON_WINE_VERSION}
-          EOF
-
-          # Proton profile ? for standard Winlator / GameNative
+          # Proton profile - for standard Winlator / GameNative
           python3 scripts/generate_profile.py \
             "${OUTPUT_DIR}/profile.json" \
             "${PROFILE_VERSION}" \
@@ -386,7 +380,7 @@ jobs:
           tar --zstd -cf "$GITHUB_WORKSPACE/output/proton-${VERSION}.wcp" \
             bin lib share prefixPack.txz profile.json
 
-          # Wine profile ? for Winlator CMOD / Ludashi
+          # Wine profile - for Winlator CMOD / Ludashi (also installs to /opt/wine/)
           python3 "$GITHUB_WORKSPACE/scripts/generate_profile.py" \
             "${OUTPUT_DIR}/profile.json" \
             "${PROFILE_VERSION}" \
