@@ -149,6 +149,10 @@ jobs:
           # none of the native arch macros are defined.
           python3 scripts/fix_wineboot_c.py wine-source
 
+          # Remove i386 C++ mangled stubs from wdscore.spec that cause
+          # lld-link "Invalid ARM64EC function name" errors.
+          python3 scripts/fix_wdscore.py wine-source
+
           # Exclude FEX stats shm block on Android - shm_open is in libc but
           # the ntdll.so link step doesn't pull it in, causing undefined symbol.
           python3 scripts/fix_virtual_c.py wine-source
