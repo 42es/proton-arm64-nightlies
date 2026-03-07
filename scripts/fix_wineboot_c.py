@@ -16,12 +16,12 @@ import sys
 
 
 GUARD = (
-    "#if !defined(__i386__) && !defined(__x86_64__) && !defined(__aarch64__)\n"
+    "/* forward declaration — ensures initialize_xstate_features is visible to\n"
+    " * all PE cross-compile targets regardless of #ifdef branch ordering */\n"
     "static void initialize_xstate_features(struct _KUSER_SHARED_DATA *data);\n"
-    "#endif\n"
 )
 
-# Anchor: insert the guard just before the create_user_shared_data function,
+# Anchor: insert the declaration just before the create_user_shared_data function,
 # which contains the call. This anchor is stable across bleeding-edge commits.
 ANCHOR = "static void create_user_shared_data(void)"
 
@@ -45,7 +45,7 @@ def main():
         print("SKIP: initialize_xstate_features not present — patch not needed")
         return 0
 
-    if GUARD.strip().splitlines()[1] in txt:
+    if "/* forward declaration — ensures initialize_xstate_features" in txt:
         print("OK: forward declaration already present")
         return 0
 
