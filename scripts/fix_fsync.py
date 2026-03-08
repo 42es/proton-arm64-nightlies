@@ -59,6 +59,11 @@ def main() -> int:
         ntdll_fsync,
         [
             (
+                "ntdll shm_utils include",
+                "#include \"unix_private.h\"\n#include \"fsync.h\"\n",
+                "#include \"unix_private.h\"\n#include \"fsync.h\"\n#ifdef __ANDROID__\n#include \"../../../android/shm_utils/shm_utils.h\"\n#endif\n",
+            ),
+            (
                 "ntdll do_fsync android guard",
                 "#ifdef __linux__\n",
                 "#if defined(__linux__) && !defined(__ANDROID__)\n",
@@ -72,6 +77,11 @@ def main() -> int:
     total_server = patch_file(
         server_fsync,
         [
+            (
+                "server shm_utils include",
+                "#include \"handle.h\"\n#include \"request.h\"\n#include \"fsync.h\"\n",
+                "#include \"handle.h\"\n#include \"request.h\"\n#include \"fsync.h\"\n#ifdef __ANDROID__\n#include \"../android/shm_utils/shm_utils.h\"\n#endif\n",
+            ),
             (
                 "server do_fsync android guard",
                 "#ifdef __linux__\n",
