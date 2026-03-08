@@ -36,6 +36,11 @@ on:
         required: false
         default: false
         type: boolean
+      extra_winebus_patches:
+        description: 'Apply optional GE winebus SDL/hidraw controller patches'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -167,6 +172,26 @@ jobs:
           sed -i 's/atoi("WINE_X11FORCEGLX")/atoi(getenv("WINE_X11FORCEGLX"))/g' \
             wine-source/android/patches/dlls_winex11_drv_opengl_c.patch
 
+
+          # Optionally add GE winebus controller patches for SDL/hidraw handling.
+          if [ "${{ github.event.inputs.extra_winebus_patches || 'false' }}" = "true" ]; then
+            mkdir -p wine-source/android/patches/optional-winebus
+            cp patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/0069-winebus-Ignore-steam-input-virtual-controller-when-P.patch wine-source/android/patches/optional-winebus/
+            cp patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/0071-winebus-PROTON_PREFER_SDL-PROTON_USE_SDL.patch wine-source/android/patches/optional-winebus/
+            cp patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/0082-winebus-Allow-disabling-steam-input-seperately.patch wine-source/android/patches/optional-winebus/
+            cp patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/0087-fixup-winebus-Allow-disabling-steam-input-seperately.patch wine-source/android/patches/optional-winebus/
+            cp patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/0112-winebus-remove-duplicate-code.patch wine-source/android/patches/optional-winebus/
+            cp patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/0141-winebus-Fix-PROTON_ENABLE-DISABLE_HIDRAW.patch wine-source/android/patches/optional-winebus/
+            cp wine-source/android/patches/optional-winebus/*.patch wine-source/android/patches/
+            python3 scripts/inject_optional_patches.py \
+              wine-source/build-scripts/build-step-arm64ec.sh \
+              0069-winebus-Ignore-steam-input-virtual-controller-when-P.patch \
+              0071-winebus-PROTON_PREFER_SDL-PROTON_USE_SDL.patch \
+              0082-winebus-Allow-disabling-steam-input-seperately.patch \
+              0087-fixup-winebus-Allow-disabling-steam-input-seperately.patch \
+              0112-winebus-remove-duplicate-code.patch \
+              0141-winebus-Fix-PROTON_ENABLE-DISABLE_HIDRAW.patch
+          fi
           # Comment out patches already merged into bleeding-edge (or handled by
           # fix_*.py scripts) so they don't get double-applied or fail the build.
           python3 scripts/filter_patches.py \
