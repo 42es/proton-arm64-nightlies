@@ -114,7 +114,7 @@ jobs:
             build_script: build-step-x86_64.sh
             output_dir: compiled-files-x86_64
             prefix_pack: prefixPack-x86_64.txz
-            profile_version: 10.0-4-x86_64
+            profile_version: 10.0.99-x86_64
             display_arch: x86_64
             sysvshm: false
 
@@ -630,4 +630,6 @@ jobs:
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
+
+
 
