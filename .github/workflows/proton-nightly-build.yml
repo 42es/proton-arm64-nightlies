@@ -57,7 +57,7 @@ jobs:
         id: upstream_check
         run: |
           WINE_REF="${{ github.event.inputs.wine_ref || 'bleeding-edge' }}"
-          FORCE_BUILD="${{ github.event.inputs.force_build || 'false' }}"
+          FORCE_BUILD="${{ inputs.force_build && 'true' || 'false' }}"
           PREV_GIT_HASH="$(python3 -c 'import json; d=json.load(open("latest.json")); print(d.get("gitHash",""))')"
 
           if printf '%s' "$WINE_REF" | grep -Eq '^[0-9a-fA-F]{7,40}$'; then
@@ -630,3 +630,4 @@ jobs:
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
+
