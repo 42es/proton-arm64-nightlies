@@ -1,5 +1,5 @@
 diff --git a/dlls/winex11.drv/mouse.c b/dlls/winex11.drv/mouse.c
-index 6d59de4..2b498b8 100644
+index 6d59de4..2cea2b8 100644
 --- a/dlls/winex11.drv/mouse.c
 +++ b/dlls/winex11.drv/mouse.c
 @@ -127,6 +127,8 @@ static const UINT button_up_data[NB_BUTTONS] =
@@ -111,7 +111,7 @@ index 6d59de4..2b498b8 100644
      XFlush( data->display ); /* avoids bad mouse lag in games that do their own mouse warping */
      TRACE( "warped to %d,%d serial %lu\n", x, y, data->warp_serial );
      return TRUE;
-@@ -1661,18 +1683,40 @@ BOOL X11DRV_MotionNotify( HWND hwnd, XEvent *xev )
+@@ -1661,18 +1683,42 @@ BOOL X11DRV_MotionNotify( HWND hwnd, XEvent *xev )
      TRACE( "hwnd %p/%lx pos %d,%d is_hint %d serial %lu\n",
             hwnd, event->window, event->x, event->y, event->is_hint, event->serial );
  
@@ -134,6 +134,7 @@ index 6d59de4..2b498b8 100644
      {
 -        TRACE( "pos %d,%d old serial %lu, ignoring\n", event->x, event->y, event->serial );
 -        return FALSE;
++        struct x11drv_thread_data *thread_data = x11drv_thread_data();
 +        int dx = event->x_root - clip_center.x;
 +        int dy = event->y_root - clip_center.y;
 +
@@ -144,8 +145,9 @@ index 6d59de4..2b498b8 100644
 +        input.mi.dy      = dy;
 +        input.mi.dwFlags = MOUSEEVENTF_MOVE;
 +
-+        /* Warp cursor back to center */
++        /* Warp cursor back to center and ignore the synthetic recenter event. */
 +        XWarpPointer( event->display, None, root_window, 0, 0, 0, 0, clip_center.x, clip_center.y );
++        thread_data->warp_serial = NextRequest( event->display );
 +
 +        send_mouse_input( hwnd, event->window, event->state, &input );
 +        return TRUE;
@@ -158,7 +160,7 @@ index 6d59de4..2b498b8 100644
      map_event_coords( hwnd, event->window, event->root, event->x_root, event->y_root, &input );
      send_mouse_input( hwnd, event->window, event->state, &input );
      return TRUE;
-@@ -1694,18 +1738,40 @@ BOOL X11DRV_EnterNotify( HWND hwnd, XEvent *xev )
+@@ -1694,18 +1740,42 @@ BOOL X11DRV_EnterNotify( HWND hwnd, XEvent *xev )
      if (hwnd == x11drv_thread_data()->grab_hwnd) return FALSE;
  
      /* simulate a mouse motion event */
@@ -181,6 +183,7 @@ index 6d59de4..2b498b8 100644
      {
 -        TRACE( "pos %d,%d old serial %lu, ignoring\n", event->x, event->y, event->serial );
 -        return FALSE;
++        struct x11drv_thread_data *thread_data = x11drv_thread_data();
 +        int dx = event->x_root - clip_center.x;
 +        int dy = event->y_root - clip_center.y;
 +
@@ -191,8 +194,9 @@ index 6d59de4..2b498b8 100644
 +        input.mi.dy      = dy;
 +        input.mi.dwFlags = MOUSEEVENTF_MOVE;
 +
-+        /* Warp cursor back to center */
++        /* Warp cursor back to center and ignore the synthetic recenter event. */
 +        XWarpPointer( event->display, None, root_window, 0, 0, 0, 0, clip_center.x, clip_center.y );
++        thread_data->warp_serial = NextRequest( event->display );
 +
 +        send_mouse_input( hwnd, event->window, event->state, &input );
 +        return TRUE;
