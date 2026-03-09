@@ -188,6 +188,14 @@ jobs:
           cp -r gamenative-src/build-scripts wine-source/build-scripts
           rm -rf gamenative-src
 
+          rm -f wine-source/android/patches/dlls_wow64_syscall_c.patch
+          rm -f wine-source/android/patches/test-bylaws/dlls_wow64_syscall_c.patch
+          mkdir -p wine-source/android/patches/test-bylaws
+          cp "ge-second-pass/test-bylaws/dlls_wow64_syscall_c.patch" \
+            "wine-source/android/patches/dlls_wow64_syscall_c.patch"
+          cp "ge-second-pass/test-bylaws/dlls_wow64_syscall_c.patch" \
+            "wine-source/android/patches/test-bylaws/dlls_wow64_syscall_c.patch"
+
           find wine-source/android/patches -type f -name "*.patch" -exec sed -i 's/\r$//' {} +
           sed -i 's/atoi("WINE_X11FORCEGLX")/atoi(getenv("WINE_X11FORCEGLX"))/g' \
             wine-source/android/patches/dlls_winex11_drv_opengl_c.patch
@@ -619,6 +627,9 @@ jobs:
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
+
+
+
 
 
 
