@@ -56,6 +56,12 @@ on:
         required: false
         default: false
         type: boolean
+      proton10_window_delay_workaround:
+        description: 'Apply Android-only Proton 10 style winex11 window state delay rollback patch'
+        required: false
+        default: false
+        type: boolean
+
 
       proton9_event_queue_filter_workaround:
         description: 'Apply Android-only Proton 9 style X11 event queue filter patch'
@@ -288,6 +294,12 @@ jobs:
             printf '%s\n' "$OPTIONAL_ANDROID_DI_KEYBOARD_PATCH"
           fi
 
+
+          if [ "${{ inputs.proton10_window_delay_workaround && 'true' || 'false' }}" = "true" ]; then
+            python3 scripts/fix_window_delay.py wine-source
+            echo "=== Proton 10 window delay workaround applied ==="
+            printf '%s\n' 'scripts/fix_window_delay.py'
+          fi
 
           if [ "${{ inputs.proton9_event_queue_filter_workaround && 'true' || 'false' }}" = "true" ]; then
             OPTIONAL_P9_EVENT_QUEUE_PATCH="dlls_winex11_drv_event_queue_filter_c.patch"
