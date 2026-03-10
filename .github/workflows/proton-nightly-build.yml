@@ -206,7 +206,7 @@ jobs:
 
           if [ "${{ inputs.disable_gamenative_patches && 'true' || 'false' }}" = "true" ]; then
             for f in wine-source/build-scripts/build-step-arm64ec.sh wine-source/build-scripts/build-step-x86_64.sh; do
-              awk 'BEGIN{in_patches=0} /PATCHES=\(/{print; in_patches=1; next} in_patches && /^[[:space:]]*\)/{in_patches=0; print; next} !in_patches{print; next} /"dlls_winepulse_drv_pulse_c.patch"/{print; next} /"dlls_ntdll_unix_esync_c.patch"/{print; next} /"dlls_ntdll_unix_fsync_c.patch"/{print; next} /"server_esync_c.patch"/{print; next} /"server_fsync_c.patch"/{print; next}' "$f" > "$f.tmp"
+              awk 'BEGIN{in_patches=0} /PATCHES=\(/{print; in_patches=1; next} in_patches && /^[[:space:]]*\)/{in_patches=0; print; next} !in_patches{print; next} /"dlls_winepulse_drv_pulse_c.patch"/{print; next} /"dlls_ntdll_unix_esync_c.patch"/{print; next} /"server_esync_c.patch"/{print; next}' "$f" > "$f.tmp"
               mv "$f.tmp" "$f"
               echo "Kept mandatory build-fix patches in $f"
             done
@@ -218,9 +218,7 @@ jobs:
             printf '%s\n' \
               'dlls_winepulse_drv_pulse_c.patch kept' \
               'dlls_ntdll_unix_esync_c.patch kept' \
-              'dlls_ntdll_unix_fsync_c.patch kept' \
               'server_esync_c.patch kept' \
-              'server_fsync_c.patch kept' \
               'fix_wineboot_c.py kept' \
               'fix_wdscore.py kept' \
               'fix_fsync.py kept' \
