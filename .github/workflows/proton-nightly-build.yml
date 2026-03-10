@@ -205,27 +205,10 @@ jobs:
           rm -rf gamenative-src
 
           if [ "${{ inputs.disable_gamenative_patches && 'true' || 'false' }}" = "true" ]; then
-            python3 - <<'"'"'PY'"'"'
-from pathlib import Path
-
-for rel in ("wine-source/build-scripts/build-step-arm64ec.sh",
-            "wine-source/build-scripts/build-step-x86_64.sh"):
-    path = Path(rel)
-    lines = path.read_text(encoding="utf-8").splitlines()
-    start = end = None
-    for i, line in enumerate(lines):
-        if "PATCHES=(" in line:
-            start = i
-            continue
-        if start is not None and line.strip() == ")":
-            end = i
-            break
-    if start is None or end is None:
-        raise SystemExit(f"PATCHES array not found in {path}")
-    lines[start + 1:end] = []
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Cleared PATCHES array in {path}")
-PY
+            python3 -c "from pathlib import Path; paths=('wine-source/build-scripts/build-step-arm64ec.sh','wine-source/build-scripts/build-step-x86_64.sh');
+for rel in paths:
+ p=Path(rel); lines=p.read_text(encoding='utf-8').splitlines(); start=next((i for i,l in enumerate(lines) if 'PATCHES=(' in l), None); end=next((i for i,l in enumerate(lines[start+1:], start+1) if l.strip()==')'), None);
+ assert start is not None and end is not None, f'PATCHES array not found in {p}'; lines[start+1:end]=[]; p.write_text('\n'.join(lines)+'\n', encoding='utf-8'); print(f'Cleared PATCHES array in {p}')"
             echo "=== GameNative patches disabled ==="
             printf '%s\n' \
               'build-step-arm64ec.sh PATCHES array cleared' \
