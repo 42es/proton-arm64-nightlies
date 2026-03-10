@@ -206,15 +206,20 @@ jobs:
 
           if [ "${{ inputs.disable_gamenative_patches && 'true' || 'false' }}" = "true" ]; then
             for f in wine-source/build-scripts/build-step-arm64ec.sh wine-source/build-scripts/build-step-x86_64.sh; do
-              awk 'BEGIN{in_patches=0} /PATCHES=\(/{print; in_patches=1; next} in_patches && /^[[:space:]]*\)/{in_patches=0; print; next} !in_patches{print}' "$f" > "$f.tmp"
+              awk 'BEGIN{in_patches=0} /PATCHES=\(/{print; in_patches=1; next} in_patches && /^[[:space:]]*\)/{in_patches=0; print; next} !in_patches{print; next} /"dlls_winepulse_drv_pulse_c.patch"/{print; next} /"programs_wineboot_wineboot_c.patch"/{print; next} /"dlls_wdscore_wdscore_spec.patch"/{print; next}' "$f" > "$f.tmp"
               mv "$f.tmp" "$f"
-              echo "Cleared PATCHES array in $f"
+              echo "Kept mandatory build-fix patches in $f"
             done
-            echo "=== GameNative patches disabled ==="
+            python3 scripts/fix_wineboot_c.py wine-source
+            python3 scripts/fix_wdscore.py wine-source
+            echo "=== GameNative feature patches disabled; mandatory build fixes kept ==="
             printf '%s\n' \
-              'build-step-arm64ec.sh PATCHES array cleared' \
-              'build-step-x86_64.sh PATCHES array cleared' \
-              'repo-side patch injection and fix scripts skipped'
+              'dlls_winepulse_drv_pulse_c.patch kept' \
+              'programs_wineboot_wineboot_c.patch kept when present' \
+              'dlls_wdscore_wdscore_spec.patch kept when present' \
+              'fix_wineboot_c.py kept' \
+              'fix_wdscore.py kept' \
+              'repo-side feature patch injection skipped'
           else
 
           rm -f wine-source/android/patches/dlls_wow64_syscall_c.patch
