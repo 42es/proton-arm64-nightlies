@@ -1,2 +1,6 @@
+/patches/*
+!/patches/dlls_winex11_drv_mouse_absolute_android.patch
+!/patches/dlls_winex11_drv_window_c.patch
+!/patches/ge-gamenative-firstpass/
+!/patches/ge-gamenative-secondpass/
 /patches/ge-wine-only-wrapper
-/patches
