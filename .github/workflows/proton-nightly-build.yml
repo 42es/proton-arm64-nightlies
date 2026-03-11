@@ -331,22 +331,21 @@ jobs:
             printf '%s\n' 'scripts/fix_net_active_window.py'
           fi
 
-          if [ "${{ inputs.goldberg_net_active_workaround && 'true' || 'false' }}" = "true" ]; then
-            python3 scripts/fix_goldberg_net_active.py wine-source
-            echo "=== Goldberg net active window workaround applied ==="
-            printf '%s\n' 'scripts/fix_goldberg_net_active.py'
+          if [ "${{ inputs.goldberg_net_active_workaround && 'true' || 'false' }}" = "true" ] || [ "${{ inputs.goldberg_event_compat_workaround && 'true' || 'false' }}" = "true" ]; then
+            OPTIONAL_GE_EVENT_PATCH="dlls_winex11_drv_event_c.patch"
+            OPTIONAL_GOLDBERG_EVENT_PATCH="dlls_winex11_drv_event_goldberg_c.patch"
+            cp "ge-second-pass/focus/$OPTIONAL_GE_EVENT_PATCH" "wine-source/android/patches/$OPTIONAL_GE_EVENT_PATCH"
+            cp "ge-second-pass/focus/$OPTIONAL_GOLDBERG_EVENT_PATCH" "wine-source/android/patches/$OPTIONAL_GOLDBERG_EVENT_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh "$OPTIONAL_GE_EVENT_PATCH" "$OPTIONAL_GOLDBERG_EVENT_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh "$OPTIONAL_GE_EVENT_PATCH" "$OPTIONAL_GOLDBERG_EVENT_PATCH"
+            echo "=== Goldberg event workaround patch stack applied ==="
+            printf '%s\n' "$OPTIONAL_GE_EVENT_PATCH" "$OPTIONAL_GOLDBERG_EVENT_PATCH"
           fi
 
           if [ "${{ inputs.goldberg_hwnd_mapping_workaround && 'true' || 'false' }}" = "true" ]; then
             python3 scripts/fix_goldberg_hwnd_mapping.py wine-source
             echo "=== Goldberg hwnd mapping workaround applied ==="
             printf '%s\n' 'scripts/fix_goldberg_hwnd_mapping.py'
-          fi
-
-          if [ "${{ inputs.goldberg_event_compat_workaround && 'true' || 'false' }}" = "true" ]; then
-            python3 scripts/fix_goldberg_event_compat.py wine-source
-            echo "=== Goldberg event compat workaround applied ==="
-            printf '%s\n' 'scripts/fix_goldberg_event_compat.py'
           fi
 
           if [ "${{ inputs.proton9_event_queue_filter_workaround && 'true' || 'false' }}" = "true" ]; then
