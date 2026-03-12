@@ -178,9 +178,9 @@ diff --git a/dlls/dinput/device.c b/dlls/dinput/device.c
  
  /* Windows uses this GUID for guidProduct on non-keyboard/mouse devices.
   * Data1 contains the device VID (low word) and PID (high word).
-@@ -1177,6 +1187,15 @@
-     EnterCriticalSection( &impl->crit );
-     hr = dinput_device_get_property( iface, guid, header );
+@@ -1497,6 +1507,15 @@
+         hr = DI_OK;
+     }
      LeaveCriticalSection( &impl->crit );
 +
 +    if (input_poll_debug_enabled() && SUCCEEDED(hr) && size >= 0x40)
