@@ -51,11 +51,6 @@ on:
         required: false
         default: false
         type: boolean
-      android_directinput_keyboard_workaround:
-        description: 'Apply Android-only DirectInput keyboard XIM bypass patch'
-        required: false
-        default: false
-        type: boolean
       proton10_window_delay_workaround:
         description: 'Apply Android-only Proton 10 style winex11 window state delay rollback patch'
         required: false
@@ -89,16 +84,6 @@ on:
 
       proton9_event_queue_filter_workaround:
         description: 'Apply Android-only Proton 9 style X11 event queue filter patch'
-        required: false
-        default: false
-        type: boolean
-      shell32_shlfileop_null_path_workaround:
-        description: 'Apply experimental shell32 SHFileOperation null-path workaround'
-        required: false
-        default: false
-        type: boolean
-      explorer_startmenu_shutdown_workaround:
-        description: 'Apply experimental explorer start menu shutdown latch workaround'
         required: false
         default: false
         type: boolean
@@ -284,29 +269,25 @@ jobs:
           sed -i 's/atoi("WINE_X11FORCEGLX")/atoi(getenv("WINE_X11FORCEGLX"))/g' \
             wine-source/android/patches/dlls_winex11_drv_opengl_c.patch
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.shell32_shlfileop_null_path_workaround && 'true' || 'false' }}" = "true" ]; then
-            OPTIONAL_SHELL32_PATCH="shell32_shlfileop_init_path_components.patch"
-            cp "patches/ge-gamenative-firstpass/shell32/$OPTIONAL_SHELL32_PATCH" \
-              "wine-source/android/patches/$OPTIONAL_SHELL32_PATCH"
-            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
-              "$OPTIONAL_SHELL32_PATCH"
-            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh \
-              "$OPTIONAL_SHELL32_PATCH"
-            echo "=== shell32 SHFileOperation null-path workaround applied ==="
-            printf '%s\n' "$OPTIONAL_SHELL32_PATCH"
-          fi
+          OPTIONAL_SHELL32_PATCH="shell32_shlfileop_init_path_components.patch"
+          cp "patches/ge-gamenative-firstpass/shell32/$OPTIONAL_SHELL32_PATCH" \
+            "wine-source/android/patches/$OPTIONAL_SHELL32_PATCH"
+          python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
+            "$OPTIONAL_SHELL32_PATCH"
+          python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh \
+            "$OPTIONAL_SHELL32_PATCH"
+          echo "=== shell32 SHFileOperation null-path workaround applied ==="
+          printf '%s\n' "$OPTIONAL_SHELL32_PATCH"
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.explorer_startmenu_shutdown_workaround && 'true' || 'false' }}" = "true" ]; then
-            OPTIONAL_EXPLORER_PATCH="explorer_startmenu_shutdown_latch.patch"
-            cp "patches/ge-gamenative-firstpass/explorer/$OPTIONAL_EXPLORER_PATCH" \
-              "wine-source/android/patches/$OPTIONAL_EXPLORER_PATCH"
-            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
-              "$OPTIONAL_EXPLORER_PATCH"
-            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh \
-              "$OPTIONAL_EXPLORER_PATCH"
-            echo "=== explorer start menu shutdown workaround applied ==="
-            printf '%s\n' "$OPTIONAL_EXPLORER_PATCH"
-          fi
+          OPTIONAL_EXPLORER_PATCH="explorer_startmenu_shutdown_latch.patch"
+          cp "patches/ge-gamenative-firstpass/explorer/$OPTIONAL_EXPLORER_PATCH" \
+            "wine-source/android/patches/$OPTIONAL_EXPLORER_PATCH"
+          python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
+            "$OPTIONAL_EXPLORER_PATCH"
+          python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh \
+            "$OPTIONAL_EXPLORER_PATCH"
+          echo "=== explorer start menu shutdown workaround applied ==="
+          printf '%s\n' "$OPTIONAL_EXPLORER_PATCH"
 
           if [ "${{ github.event.inputs.extra_winebus_patches || 'false' }}" = "true" ]; then
             OPTIONAL_WINEBUS_BASE="https://raw.githubusercontent.com/GloriousEggroll/proton-ge-custom/master/patches/wine-hotfixes/wine-wayland"
@@ -349,14 +330,6 @@ jobs:
               echo "=== Skipping optional base event.c patch because another event.c path is enabled ==="
               printf '%s\n' "$OPTIONAL_GE_EVENT_PATCH skipped"
             fi
-          fi
-
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.android_directinput_keyboard_workaround && 'true' || 'false' }}" = "true" ]; then
-            OPTIONAL_ANDROID_DI_KEYBOARD_PATCH="dlls_winex11_drv_keyboard_directinput_c.patch"
-            cp "ge-second-pass/keyboard/$OPTIONAL_ANDROID_DI_KEYBOARD_PATCH" "wine-source/android/patches/$OPTIONAL_ANDROID_DI_KEYBOARD_PATCH"
-            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh "$OPTIONAL_ANDROID_DI_KEYBOARD_PATCH"
-            echo "=== Android DirectInput keyboard workaround applied ==="
-            printf '%s\n' "$OPTIONAL_ANDROID_DI_KEYBOARD_PATCH"
           fi
 
 
