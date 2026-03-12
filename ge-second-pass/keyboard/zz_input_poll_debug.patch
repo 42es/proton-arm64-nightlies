@@ -5,7 +5,6 @@ diff --git a/dlls/winex11.drv/keyboard.c b/dlls/winex11.drv/keyboard.c
  
  #include <ctype.h>
  #include <stdarg.h>
-+#include <stdio.h>
 +#include <stdlib.h>
  #include <string.h>
  
@@ -30,8 +29,8 @@ diff --git a/dlls/winex11.drv/keyboard.c b/dlls/winex11.drv/keyboard.c
      input.ki.dwExtraInfo = 0;
  
 +    if (input_poll_debug_enabled())
-+        fprintf( stderr, "INPUTDBG winex11.send hwnd=%p vk=%#x scan=%#x flags=%#x time=%u\n",
-+                 hwnd, vkey, scan, flags, time );
++        ERR_(key)( "INPUTDBG winex11.send hwnd=%p vk=%#x scan=%#x flags=%#x time=%u\n",
++                   hwnd, vkey, scan, flags, time );
 +
      NtUserSendHardwareInput( hwnd, 0, &input, 0 );
  }
@@ -41,11 +40,11 @@ diff --git a/dlls/winex11.drv/keyboard.c b/dlls/winex11.drv/keyboard.c
  static void set_async_key_state( const BYTE state[256] )
  {
 +    if (input_poll_debug_enabled())
-+        fprintf( stderr, "INPUTDBG winex11.async LSHIFT=%02x RSHIFT=%02x LCTRL=%02x RCTRL=%02x "
-+                         "LMENU=%02x RMENU=%02x SPACE=%02x W=%02x A=%02x S=%02x D=%02x\n",
-+                 state[VK_LSHIFT], state[VK_RSHIFT], state[VK_LCONTROL], state[VK_RCONTROL],
-+                 state[VK_LMENU], state[VK_RMENU], state[VK_SPACE], state['W'], state['A'],
-+                 state['S'], state['D'] );
++        ERR_(key)( "INPUTDBG winex11.async LSHIFT=%02x RSHIFT=%02x LCTRL=%02x RCTRL=%02x "
++                   "LMENU=%02x RMENU=%02x SPACE=%02x W=%02x A=%02x S=%02x D=%02x\n",
++                   state[VK_LSHIFT], state[VK_RSHIFT], state[VK_LCONTROL], state[VK_RCONTROL],
++                   state[VK_LMENU], state[VK_RMENU], state[VK_SPACE], state['W'], state['A'],
++                   state['S'], state['D'] );
 +
      SERVER_START_REQ( set_key_state )
      {
@@ -56,10 +55,10 @@ diff --git a/dlls/winex11.drv/keyboard.c b/dlls/winex11.drv/keyboard.c
      if ( vkey & 0x100 )              dwFlags |= KEYEVENTF_EXTENDEDKEY;
 +
 +    if (input_poll_debug_enabled())
-+        fprintf( stderr, "INPUTDBG winex11.keyevent hwnd=%p type=%s keycode=%u state=%#x "
-+                         "keysym=%#lx vk=%#x scan=%#x flags=%#x time=%u\n",
-+                 hwnd, event->type == KeyPress ? "down" : "up", event->keycode, event->state,
-+                 keysym, vkey & 0xff, bScan, dwFlags, event_time );
++        ERR_(key)( "INPUTDBG winex11.keyevent hwnd=%p type=%s keycode=%u state=%#x "
++                   "keysym=%#lx vk=%#x scan=%#x flags=%#x time=%u\n",
++                   hwnd, event->type == KeyPress ? "down" : "up", event->keycode, event->state,
++                   keysym, vkey & 0xff, bScan, dwFlags, event_time );
  
      update_lock_state( hwnd, vkey, event->state, event_time );
  
@@ -120,7 +119,6 @@ diff --git a/dlls/dinput/keyboard.c b/dlls/dinput/keyboard.c
   */
  
  #include <stdarg.h>
-+#include <stdio.h>
 +#include <stdlib.h>
  #include <string.h>
  #include "windef.h"
@@ -146,8 +144,8 @@ diff --git a/dlls/dinput/keyboard.c b/dlls/dinput/keyboard.c
      TRACE( "setting key %02x to %02x\n", dik_code, impl->base.device_state[dik_code] );
 +
 +    if (input_poll_debug_enabled())
-+        fprintf( stderr, "INPUTDBG dinput.kbd_event vk=%#lx scan=%#lx up=%u dik=%#x state=%02x\n",
-+                 vkey, scan_code, up, dik_code, impl->base.device_state[dik_code] );
++        ERR( "INPUTDBG dinput.kbd_event vk=%#lx scan=%#lx up=%u dik=%#x state=%02x\n",
++             vkey, scan_code, up, dik_code, impl->base.device_state[dik_code] );
  
      EnterCriticalSection( &impl->base.crit );
  
@@ -158,7 +156,6 @@ diff --git a/dlls/dinput/device.c b/dlls/dinput/device.c
   */
  
  #include <stdarg.h>
-+#include <stdio.h>
 +#include <stdlib.h>
  #include <string.h>
  #include <math.h>
@@ -186,10 +183,10 @@ diff --git a/dlls/dinput/device.c b/dlls/dinput/device.c
 +    if (input_poll_debug_enabled() && SUCCEEDED(hr) && size >= 0x40)
 +    {
 +        BYTE *bytes = data;
-+        fprintf( stderr, "INPUTDBG dinput.get_state size=%lu hr=%#lx ESC=%02x 1=%02x SPACE=%02x "
-+                         "A=%02x D=%02x S=%02x W=%02x LSHIFT=%02x RSHIFT=%02x LCTRL=%02x RCTRL=%02x\n",
-+                 size, hr, bytes[0x01], bytes[0x02], bytes[0x39], bytes[0x1e], bytes[0x20],
-+                 bytes[0x1f], bytes[0x11], bytes[0x2a], bytes[0x36], bytes[0x1d], bytes[0x9d] );
++        ERR( "INPUTDBG dinput.get_state size=%lu hr=%#lx ESC=%02x 1=%02x SPACE=%02x "
++             "A=%02x D=%02x S=%02x W=%02x LSHIFT=%02x RSHIFT=%02x LCTRL=%02x RCTRL=%02x\n",
++             size, hr, bytes[0x01], bytes[0x02], bytes[0x39], bytes[0x1e], bytes[0x20],
++             bytes[0x1f], bytes[0x11], bytes[0x2a], bytes[0x36], bytes[0x1d], bytes[0x9d] );
 +    }
  
      return hr;
