@@ -92,6 +92,11 @@ on:
         required: false
         default: false
         type: boolean
+      shell32_shlfileop_null_path_workaround:
+        description: 'Apply experimental shell32 SHFileOperation null-path workaround'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   prepare:
@@ -270,16 +275,21 @@ jobs:
             "wine-source/android/patches/test-bylaws/dlls_wow64_syscall_c.patch"
           cp "ge-second-pass/test-bylaws/dlls_ntdll_signal_arm64ec_c.patch" \
             "wine-source/android/patches/test-bylaws/dlls_ntdll_signal_arm64ec_c.patch"
-          cp "patches/ge-gamenative-firstpass/shell32/shell32_shlfileop_init_path_components.patch" \
-            "wine-source/android/patches/shell32_shlfileop_init_path_components.patch"
-
           find wine-source/android/patches -type f -name "*.patch" -exec sed -i 's/\r$//' {} +
           sed -i 's/atoi("WINE_X11FORCEGLX")/atoi(getenv("WINE_X11FORCEGLX"))/g' \
             wine-source/android/patches/dlls_winex11_drv_opengl_c.patch
-          python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
-            shell32_shlfileop_init_path_components.patch
-          python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh \
-            shell32_shlfileop_init_path_components.patch
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.shell32_shlfileop_null_path_workaround && 'true' || 'false' }}" = "true" ]; then
+            OPTIONAL_SHELL32_PATCH="shell32_shlfileop_init_path_components.patch"
+            cp "patches/ge-gamenative-firstpass/shell32/$OPTIONAL_SHELL32_PATCH" \
+              "wine-source/android/patches/$OPTIONAL_SHELL32_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
+              "$OPTIONAL_SHELL32_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh \
+              "$OPTIONAL_SHELL32_PATCH"
+            echo "=== shell32 SHFileOperation null-path workaround applied ==="
+            printf '%s\n' "$OPTIONAL_SHELL32_PATCH"
+          fi
 
           if [ "${{ github.event.inputs.extra_winebus_patches || 'false' }}" = "true" ]; then
             OPTIONAL_WINEBUS_BASE="https://raw.githubusercontent.com/GloriousEggroll/proton-ge-custom/master/patches/wine-hotfixes/wine-wayland"
