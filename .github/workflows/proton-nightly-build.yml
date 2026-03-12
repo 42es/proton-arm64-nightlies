@@ -97,6 +97,11 @@ on:
         required: false
         default: false
         type: boolean
+      dinput_instance_debug:
+        description: 'Apply optional DirectInput instance pointer debug patch'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   prepare:
@@ -402,6 +407,15 @@ jobs:
             python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh "$OPTIONAL_INPUT_DEBUG_PATCH"
             echo "=== Input polling debug instrumentation patch applied ==="
             printf '%s\n' "$OPTIONAL_INPUT_DEBUG_PATCH"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dinput_instance_debug && 'true' || 'false' }}" = "true" ]; then
+            OPTIONAL_DINPUT_INSTANCE_DEBUG_PATCH="zz_dinput_instance_debug.patch"
+            cp "ge-second-pass/input/$OPTIONAL_DINPUT_INSTANCE_DEBUG_PATCH" "wine-source/android/patches/$OPTIONAL_DINPUT_INSTANCE_DEBUG_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh "$OPTIONAL_DINPUT_INSTANCE_DEBUG_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh "$OPTIONAL_DINPUT_INSTANCE_DEBUG_PATCH"
+            echo "=== DirectInput instance pointer debug patch applied ==="
+            printf '%s\n' "$OPTIONAL_DINPUT_INSTANCE_DEBUG_PATCH"
           fi
 
           python3 scripts/filter_patches.py wine-source/build-scripts/build-step-arm64ec.sh wine-source
