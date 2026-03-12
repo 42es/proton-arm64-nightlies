@@ -115,40 +115,17 @@ diff --git a/server/queue.c b/server/queue.c
 diff --git a/dlls/dinput/keyboard.c b/dlls/dinput/keyboard.c
 --- a/dlls/dinput/keyboard.c
 +++ b/dlls/dinput/keyboard.c
-@@ -21,6 +21,7 @@
-  */
- 
- #include <stdarg.h>
-+#include <stdlib.h>
- #include <string.h>
- #include "windef.h"
- #include "winbase.h"
-@@ -33,6 +34,14 @@
- #include "wine/debug.h"
- 
- WINE_DEFAULT_DEBUG_CHANNEL(dinput);
-+
-+static BOOL input_poll_debug_enabled(void)
-+{
-+    static int enabled = -1;
-+
-+    if (enabled == -1) enabled = !!getenv( "WINE_INPUT_POLL_DEBUG" );
-+    return enabled;
-+}
- 
- static const struct dinput_device_vtbl keyboard_vtbl;
- 
-@@ -107,6 +116,10 @@
- 
+@@ -108,6 +108,10 @@
      impl->base.device_state[dik_code] = new_diks;
      TRACE( "setting key %02x to %02x\n", dik_code, impl->base.device_state[dik_code] );
-+
-+    if (input_poll_debug_enabled())
+ 
++    if (GetEnvironmentVariableA( "WINE_INPUT_POLL_DEBUG", NULL, 0 ))
 +        ERR( "INPUTDBG dinput.kbd_event vk=%#lx scan=%#lx up=%u dik=%#x state=%02x\n",
 +             vkey, scan_code, up, dik_code, impl->base.device_state[dik_code] );
- 
++
      EnterCriticalSection( &impl->base.crit );
  
+     if ((index = dinput_device_object_index_from_id( iface, DIDFT_PSHBUTTON | DIDFT_MAKEINSTANCE( dik_code ) )) >= 0)
 diff --git a/dlls/dinput/device.c b/dlls/dinput/device.c
 --- a/dlls/dinput/device.c
 +++ b/dlls/dinput/device.c
