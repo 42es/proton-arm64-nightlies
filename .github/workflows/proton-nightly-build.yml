@@ -304,11 +304,15 @@ jobs:
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dinput_android_compat_workaround && 'true' || 'false' }}" = "true" ]; then
             OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH="dlls_dinput_android_compat.patch"
+            OPTIONAL_ANDROID_RELATIVE_MOUSE_PATCH="dlls_wineandroid_drv_window_c.patch"
             cp "ge-second-pass/input/$OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH" "wine-source/android/patches/$OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH"
+            cp "ge-second-pass/input/$OPTIONAL_ANDROID_RELATIVE_MOUSE_PATCH" "wine-source/android/patches/$OPTIONAL_ANDROID_RELATIVE_MOUSE_PATCH"
             python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh "$OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH"
             python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh "$OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH"
-            echo "=== Android DirectInput raw-input compatibility workaround applied ==="
-            printf '%s\n' "$OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh "$OPTIONAL_ANDROID_RELATIVE_MOUSE_PATCH"
+            python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-x86_64.sh "$OPTIONAL_ANDROID_RELATIVE_MOUSE_PATCH"
+            echo "=== Android input compatibility workarounds applied ==="
+            printf '%s\n' "$OPTIONAL_DINPUT_ANDROID_COMPAT_PATCH" "$OPTIONAL_ANDROID_RELATIVE_MOUSE_PATCH"
           fi
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.input_poll_debug && 'true' || 'false' }}" = "true" ]; then
@@ -781,7 +785,6 @@ jobs:
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
-
 
 
 
