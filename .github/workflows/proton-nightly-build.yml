@@ -383,6 +383,9 @@ jobs:
           python3 scripts/fix_wdscore.py wine-source
           python3 scripts/fix_virtual_c.py wine-source
           python3 scripts/fix_fsync.py wine-source
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.enable_ntsync && 'true' || 'false' }}" = "true" ]; then
+            python3 scripts/fix_ntsync_chain.py wine-source
+          fi
           python3 scripts/fix_suspend_chain.py wine-source
 
           echo "=== repo-owned BYLAWS overrides ==="
@@ -891,5 +894,4 @@ jobs:
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
-
 

@@ -45,6 +45,7 @@ ALREADY_APPLIED = {
     # drift-prone patches must not be required for the build to proceed.
     "dlls_ntdll_unix_fsync_c.patch":        ("dlls/ntdll/unix/fsync.c",      "#if defined(__linux__) && !defined(__ANDROID__)"),
     "server_fsync_c.patch":                 ("server/fsync.c",                "#if defined(__linux__) && !defined(__ANDROID__)"),
+    "0162-ntdll-Add-stub-functions-for-in-process-synchronizat.patch": ("dlls/ntdll/unix/sync.c", ["inproc_query_semaphore( handle, out )", "inproc_signal_and_wait( signal, wait, alertable, timeout )"]),
 
     # test-bylaws patches
     "test-bylaws/dlls_ntdll_unwind_h.patch":         ("dlls/ntdll/unwind.h",         ["CONTEXT_ARM64_FEX_YMMSTATE", "CONTEXT_AMD64_XSTATE"]),
@@ -125,5 +126,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
