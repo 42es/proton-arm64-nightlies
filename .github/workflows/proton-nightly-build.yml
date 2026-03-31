@@ -213,6 +213,22 @@ jobs:
           cp -r gamenative-src/build-scripts wine-source/build-scripts
           rm -rf gamenative-src
 
+      - name: Download ntsync patch series
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_ntsync }}
+        run: |
+          NTSYNC_BASE="https://raw.githubusercontent.com/GloriousEggroll/proton-ge-custom/master/patches/wine-hotfixes/wine-wayland"
+          NTSYNC_DIR="$RUNNER_TEMP/ntsync-patches"
+          mkdir -p "$NTSYNC_DIR"
+          for ntsync_patch in \
+            0163-ntdll-Retrieve-and-cache-an-ntsync-device-in-wait-ca.patch \
+            0164-server-Add-an-object-operation-to-retrieve-an-in-pro.patch \
+            0165-ntsync-implementation.patch \
+            0166-Finish-up-ntsync-console-implementation.patch; do
+            wget -q "$NTSYNC_BASE/$ntsync_patch" -O "$NTSYNC_DIR/$ntsync_patch"
+            test -s "$NTSYNC_DIR/$ntsync_patch"
+          done
+          echo "NTSYNC_DIR=$NTSYNC_DIR" >> "$GITHUB_ENV"
+
           if [ "${{ inputs.disable_gamenative_patches && 'true' || 'false' }}" = "true" ]; then
             for f in wine-source/build-scripts/build-step-arm64ec.sh wine-source/build-scripts/build-step-x86_64.sh; do
               awk 'BEGIN{in_patches=0} /PATCHES=\(/{print; in_patches=1; next} in_patches && /^[[:space:]]*\)/{in_patches=0; print; next} !in_patches{print; next} /"dlls_winepulse_drv_pulse_c.patch"/{print; next} /"dlls_ntdll_unix_esync_c.patch"/{print; next} /"server_esync_c.patch"/{print; next} /"dlls_winex11_drv_bitblt_c.patch"/{print; next} /"dlls_winex11_drv_mouse_c.patch"/{print; next}' "$f" > "$f.tmp"
@@ -279,7 +295,7 @@ jobs:
               0164-server-Add-an-object-operation-to-retrieve-an-in-pro.patch \
               0165-ntsync-implementation.patch \
               0166-Finish-up-ntsync-console-implementation.patch; do
-              cp "$GITHUB_WORKSPACE/patches/ge-wine-only-wrapper/patches/wine-hotfixes/wine-wayland/$ntsync_patch" \
+              cp "$NTSYNC_DIR/$ntsync_patch" \
                 "wine-source/android/patches/$ntsync_patch"
             done
             python3 scripts/inject_optional_patches.py wine-source/build-scripts/build-step-arm64ec.sh \
@@ -852,7 +868,6 @@ jobs:
           rm -rf "$RUNNER_TEMP"/* || true
           echo "=== Disk usage after cleanup ==="
           df -h
-
 
 
 
