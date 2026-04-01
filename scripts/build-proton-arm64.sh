@@ -106,8 +106,8 @@ fi
 # Keep local builds aligned with the workflow patch set for Winlator container exit.
 "$SCRIPT_DIR/apply_patch_series.sh" \
     "$SOURCE_DIR" \
-    "$SCRIPT_DIR/../patches/ge-gamenative-firstpass/loader/loader_preloader_silence_missing_r_debug.patch" \
     "$SCRIPT_DIR/../patches/ge-gamenative-firstpass/explorer/explorer_startmenu_shutdown_latch.patch"
+python3 "$SCRIPT_DIR/fix_preloader_r_debug_noise.py" "$SOURCE_DIR"
 
 if [[ $ENABLE_NTSYNC -eq 1 ]]; then
     log "Applying optional ntsync patch series"
