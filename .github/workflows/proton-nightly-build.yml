@@ -194,6 +194,14 @@ jobs:
             git -C proton-source checkout FETCH_HEAD
           }
           WINE_URL="$(git -C proton-source config --file .gitmodules --get submodule.wine.url)"
+          case "$WINE_URL" in
+            ../*)
+              WINE_URL="https://github.com/ValveSoftware/${WINE_URL#../}.git"
+              ;;
+            ./*)
+              WINE_URL="https://github.com/ValveSoftware/${WINE_URL#./}.git"
+              ;;
+          esac
           WINE_COMMIT="$(git -C proton-source ls-tree HEAD wine | awk '{print $3}')"
           git clone --depth=1 "$WINE_URL" wine-source \
           || {
