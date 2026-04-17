@@ -618,7 +618,16 @@ jobs:
         if: steps.configure_build.outcome == 'failure'
         run: |
           cd wine-source
-          echo "ERROR: configure did not produce ./Makefile or configure exited early"
+          echo "ERROR: configure stage failed, or a patch/follow-up step inside --configure exited non-zero"
+          echo "=== cwd ==="
+          pwd
+          echo "=== root entries ==="
+          ls -la || true
+          if [ -f ./Makefile ]; then
+            echo "INFO: ./Makefile exists, so configure likely succeeded and a later step failed."
+          else
+            echo "INFO: ./Makefile is missing."
+          fi
           if [ -f ./configure-run.log ]; then
             echo "=== tail: ./configure-run.log ==="
             tail -n 250 ./configure-run.log || true
