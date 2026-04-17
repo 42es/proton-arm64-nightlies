@@ -50,7 +50,7 @@ Example current Proton metadata:
 
 ## Why `versionName` Is Numeric
 
-Even though the external release naming is `proton_11`, the internal `versionName` is numeric so stock GameNative recognizes the package as ARM64EC Proton.
+The external `.wcp` naming uses `proton-proton_11`, and the internal `versionName` stays numeric so stock GameNative recognizes the package as ARM64EC Proton.
 
 That internal value currently drives installation to:
 
